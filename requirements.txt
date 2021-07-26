@@ -1,0 +1,3 @@
+frida~=15.0.8
+psutil~=5.8.0
+setuptools~=57.4.0

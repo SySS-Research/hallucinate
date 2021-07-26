@@ -1,0 +1,3 @@
+include hallucinate/utils.js
+include hallucinate/modules/*.js
+include hallucinate/modules/optional/*.js

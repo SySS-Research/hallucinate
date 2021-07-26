@@ -1,0 +1,11 @@
+build
+dist
+hallucinate.egg-info
+java/target
+pyenv.cfg
+test
+venv
+pyvenv.cfg
+scripts
+.idea
+__pycache__
