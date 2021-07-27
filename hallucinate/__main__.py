@@ -107,7 +107,10 @@ def main():
             time.sleep(0.1)
     except OSError:
         pass
+    except KeyboardInterrupt:
+        pass
 
+    logging.info("Stopping hallucinate")
     frida.shutdown()
     java_stop()
     h.close()
