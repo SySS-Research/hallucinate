@@ -18,6 +18,8 @@ def main():
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('--process', '-p',
                         help='Attach to existing process (by name or PID)')
+    parser.add_argument('--remote', '-r', default=False, action='store_true',
+                        help='Attach to Frida on remote system (port forwarded 27042)')
     parser.add_argument('--disable', '-d', default=[], action='append',
                         help='Disable default module (gnutls.js, java.js, nss.js, openssl.js, schannel.js)')
     parser.add_argument('--enable', '-e', default=[], action='append',
@@ -69,20 +71,25 @@ def main():
     h = create_handler_for_args(args)
 
     spawned = False
+    if args.remote:
+        device = frida.get_remote_device()
+    else:
+        device = frida.get_local_device()
+            
     if args.process is not None:
         pid = args.process
         if not args.process.isdigit():
-            pid = frida.get_local_device().get_process(args.process).pid
+            pid = device.get_process(args.process).pid
         pid = int(pid)
-        session = frida.attach(pid)
+        session = device.attach(pid)
     elif len(args.cmd) > 0:
         cmdline = args.cmd
         if args.injectagentstartup:
             cmdline = java_attach_startup(cmdline, RequestHandler(h), args)
         logging.info("Starting %s", cmdline)
-        pid = frida.spawn(cmdline)
+        pid = device.spawn(cmdline)
         spawned = True
-        session = frida.attach(pid)
+        session = device.attach(pid)
     else:
         parser.print_usage(sys.stderr)
         sys.exit(-1)
@@ -96,15 +103,19 @@ def main():
     logging.info("Injected script, resuming execution of %d", pid)
     try:
         if spawned:
-            frida.resume(pid)
+            device.resume(pid)
     except frida.InvalidArgumentError as e:
         logging.debug('Failed to resume process', exc_info=e)
         pass
 
     try:
         # if the process was launched by us, wait for the process to exit
-        while psutil.pid_exists(pid):
-            time.sleep(0.1)
+        if not args.remote:
+            while psutil.pid_exists(pid):
+                time.sleep(0.1)
+        else:
+            while True:
+                time.sleep(0.1)
     except OSError:
         pass
     except KeyboardInterrupt:
